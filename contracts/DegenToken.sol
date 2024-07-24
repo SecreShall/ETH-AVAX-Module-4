@@ -1,106 +1,89 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.18;
 
-contract DegenToken {
-    string public name;
-    string public symbol;
-    uint8 public decimals;
-    uint256 public totalSupply;
-    address public owner;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+contract DegenToken is ERC20, Ownable, ERC20Burnable {
     struct StoreItem {
-        uint price;
+        uint256 price;
         string name;
         bool tokenRedeemed;
     }
 
-    StoreItem[] private items;
+    StoreItem[] private itemsCatalog; 
 
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+    event ItemRedeemed(address indexed user, uint256 itemId, string item);
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
-    constructor() {
-        name = "Degen";
-        symbol = "DGN";
-        decimals = 18;
-        totalSupply = 1_000_000 * 10**uint256(decimals);
-        owner = msg.sender;
-        balanceOf[owner] = totalSupply;
-
-        // Initialize store items
-        items.push(StoreItem(3, "Void Crystal", false));
-        items.push(StoreItem(5, "Quantum Core", false));
-        items.push(StoreItem(2, "Stellar Essence", false));
-        items.push(StoreItem(1, "Nebula Shard", false));
-        items.push(StoreItem(1, "Cosmic Dust", false));
+    constructor() ERC20("Degen", "DGN") {
+        // Initialize items
+        itemsCatalog.push(StoreItem(3, "Void Crystal", false));
+        itemsCatalog.push(StoreItem(5, "Quantum Core", false));
+        itemsCatalog.push(StoreItem(2, "Stellar Essence", false));
+        itemsCatalog.push(StoreItem(1, "Nebula Shard", false));
+        itemsCatalog.push(StoreItem(1, "Cosmic Dust", false));
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not the contract owner");
-        _;
+    // Create tokens
+    function createTokens(address destination, uint256 amount) public onlyOwner {
+        require(destination != address(0), "Invalid address");
+        _mint(destination, amount);
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
-        require(to != address(0), "Invalid recipient");
-        require(balanceOf[msg.sender] >= value, "Insufficient balance");
+    // Transfer Tokens
+    function transferTokens(address destination, uint256 amount) public returns (bool) {
+        require(destination != address(0), "Invalid recipient");
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
 
-        balanceOf[msg.sender] -= value;
-        balanceOf[to] += value;
-        emit Transfer(msg.sender, to, value);
+        _transfer(msg.sender, destination, amount);
         return true;
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
-        require(spender != address(0), "Invalid spender");
-        allowance[msg.sender][spender] = value;
-        emit Approval(msg.sender, spender, value);
-        return true;
+    // Redeem item
+    function redeemItem(uint256 itemId) public {
+        require(itemId < itemsCatalog.length, "Invalid item ID");
+        StoreItem storage item = itemsCatalog[itemId];
+        require(balanceOf(msg.sender) >= item.price, "Insufficient balance to redeem item");
+        require(!item.tokenRedeemed, "Item already redeemed");
+
+        _burn(msg.sender, item.price);
+        item.tokenRedeemed = true;
+
+        emit ItemRedeemed(msg.sender, itemId, item.name);
     }
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        require(from != address(0), "Invalid sender");
-        require(to != address(0), "Invalid recipient");
-        require(balanceOf[from] >= value, "Insufficient balance");
-        require(allowance[from][msg.sender] >= value, "Allowance exceeded");
-
-        balanceOf[from] -= value;
-        balanceOf[to] += value;
-        allowance[from][msg.sender] -= value;
-        emit Transfer(from, to, value);
-        return true;
+    // Check balance
+    function verifyBalance(address account) public view returns (uint256) {
+        return balanceOf(account);
     }
 
-    function mint(address account, uint256 amount) external onlyOwner {
-        require(account != address(0), "Invalid account");
-        totalSupply += amount;
-        balanceOf[account] += amount;
-        emit Transfer(address(0), account, amount);
+    // Burn tokens
+    function destroyTokens(uint256 amount) public {
+        require(balanceOf(msg.sender) >= amount, "Insufficient balance to burn");
+        _burn(msg.sender, amount);
     }
 
-    function burn(uint256 amount) external {
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        totalSupply -= amount;
-        balanceOf[msg.sender] -= amount;
-        emit Transfer(msg.sender, address(0), amount);
+    // Get item details
+    function getItem(uint256 itemId) public view returns (uint256, string memory, bool) {
+        require(itemId < itemsCatalog.length, "Invalid item ID");
+        StoreItem memory item = itemsCatalog[itemId];
+        return (item.price, item.name, item.tokenRedeemed);
     }
 
+
+    // List items as a string
     function listStoreItems() external view returns (string memory) {
         string memory storeItems = "";
 
-        for (uint256 i = 0; i < items.length; i++) {
-            storeItems = string(abi.encodePacked(storeItems, "   [", uintToString(i), "] ", items[i].name, "\n"));
+        for (uint256 i = 0; i < itemsCatalog.length; i++) {
+            storeItems = string(abi.encodePacked(storeItems, "[", uintToString(i), "] ", itemsCatalog[i].name, "\n"));
         }
 
         return storeItems;
     }
 
-    function getContractBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
-
+    // Utility function to convert uint to string
     function uintToString(uint256 value) internal pure returns (string memory) {
         if (value == 0) {
             return "0";
@@ -114,9 +97,10 @@ contract DegenToken {
         bytes memory buffer = new bytes(digits);
         while (value != 0) {
             digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + value % 10));
+            buffer[digits] = bytes1(uint8(48 + uint8(value % 10)));
             value /= 10;
         }
         return string(buffer);
     }
+
 }
