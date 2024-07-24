@@ -18,11 +18,11 @@ contract DegenToken is ERC20, Ownable, ERC20Burnable {
 
     constructor() ERC20("Degen", "DGN") {
         // Initialize items
-        itemsCatalog.push(StoreItem(3, "Void Crystal", false));
-        itemsCatalog.push(StoreItem(5, "Quantum Core", false));
-        itemsCatalog.push(StoreItem(2, "Stellar Essence", false));
-        itemsCatalog.push(StoreItem(1, "Nebula Shard", false));
-        itemsCatalog.push(StoreItem(1, "Cosmic Dust", false));
+        itemsCatalog.push(StoreItem(10, "Valkyrie", false));
+        itemsCatalog.push(StoreItem(20, "Dark Night", false));
+        itemsCatalog.push(StoreItem(5, "Shadow of Eminence", false));
+        itemsCatalog.push(StoreItem(10, "Demon", false));
+        itemsCatalog.push(StoreItem(15, "Vampire", false));
     }
 
     // Create tokens
