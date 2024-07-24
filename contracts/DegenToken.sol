@@ -17,6 +17,7 @@ contract DegenToken {
     StoreItem[] private items;
 
     mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -30,11 +31,11 @@ contract DegenToken {
         balanceOf[owner] = totalSupply;
 
         // Initialize store items
-        items.push(StoreItem(100, "Void Crystal", false));
-        items.push(StoreItem(50, "Quantum Core", false));
-        items.push(StoreItem(200, "Stellar Essence", false));
-        items.push(StoreItem(100, "Nebula Shard", false));
-        items.push(StoreItem(150, "Cosmic Dust", false));
+        items.push(StoreItem(3, "Void Crystal", false));
+        items.push(StoreItem(5, "Quantum Core", false));
+        items.push(StoreItem(2, "Stellar Essence", false));
+        items.push(StoreItem(1, "Nebula Shard", false));
+        items.push(StoreItem(1, "Cosmic Dust", false));
     }
 
     modifier onlyOwner() {
