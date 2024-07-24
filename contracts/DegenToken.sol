@@ -53,11 +53,6 @@ contract DegenToken is ERC20, Ownable, ERC20Burnable {
         emit ItemRedeemed(msg.sender, itemId, item.name);
     }
 
-    // Check balance
-    function verifyBalance(address account) public view returns (uint256) {
-        return balanceOf(account);
-    }
-
     // Burn tokens
     function destroyTokens(uint256 amount) public {
         require(balanceOf(msg.sender) >= amount, "Insufficient balance to burn");
@@ -101,6 +96,11 @@ contract DegenToken is ERC20, Ownable, ERC20Burnable {
             value /= 10;
         }
         return string(buffer);
+    }
+
+    // Check balance
+    function verifyBalance(address account) public view returns (uint256) {
+        return balanceOf(account);
     }
 
 }
